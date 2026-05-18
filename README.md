@@ -1,7 +1,7 @@
 
-  # Aplikasi Pantau Harga Pangan
+  # PANARA (pangan nusantara)
 
-  This is a code bundle for Aplikasi Pantau Harga Pangan. The original project is available at https://www.figma.com/design/19VUXbcbCVkTdpcrzNQvxy/Aplikasi-Pantau-Harga-Pangan.
+  Aplikasi Pantau Harga Pangan. The original project is available at https://www.figma.com/design/19VUXbcbCVkTdpcrzNQvxy/Aplikasi-Pantau-Harga-Pangan.
 
   ## Running the code
 
