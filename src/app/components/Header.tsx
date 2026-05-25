@@ -8,9 +8,11 @@ interface HeaderProps {
   onCityChange: (city: string) => void;
   role: 'consumer' | 'farmer';
   onRoleChange: (role: 'consumer' | 'farmer') => void;
+  provinces: string[];
+  loadingProvinces?: boolean;
 }
 
-export function Header({ selectedCity, onCityChange, role, onRoleChange }: HeaderProps) {
+export function Header({ selectedCity, onCityChange, role, onRoleChange, provinces, loadingProvinces }: HeaderProps) {
   return (
     <header className="bg-gradient-to-r from-green-600 to-green-700 text-white shadow-lg">
       <div className="container mx-auto px-4 py-6">
@@ -22,10 +24,15 @@ export function Header({ selectedCity, onCityChange, role, onRoleChange }: Heade
               <p className="text-sm text-green-100">Pangan Nusantara</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-4 flex-wrap">
             <RoleToggle role={role} onRoleChange={onRoleChange} />
-            <LocationSelector selectedCity={selectedCity} onCityChange={onCityChange} />
+            <LocationSelector
+              selectedCity={selectedCity}
+              onCityChange={onCityChange}
+              provinces={provinces}
+              loading={loadingProvinces}
+            />
             <button className="p-2 hover:bg-green-500 rounded-lg transition-colors">
               <Bell className="w-6 h-6" />
             </button>
