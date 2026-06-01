@@ -1,4 +1,3 @@
-import { Bell } from "lucide-react";
 import { Logo } from "./Logo";
 import { LocationSelector } from "./LocationSelector";
 import { RoleToggle } from "./RoleToggle";
@@ -33,9 +32,7 @@ export function Header({ selectedCity, onCityChange, role, onRoleChange, provinc
               provinces={provinces}
               loading={loadingProvinces}
             />
-            <button className="p-2 hover:bg-green-500 rounded-lg transition-colors">
-              <Bell className="w-6 h-6" />
-            </button>
+
           </div>
         </div>
       </div>

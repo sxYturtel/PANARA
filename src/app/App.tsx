@@ -11,53 +11,6 @@ import { useProvinces } from "../hooks/useProvinces";
 import { useCommodities } from "../hooks/useCommodities";
 import { usePriceHistory } from "../hooks/usePriceHistory";
 
-
-// Data berita tetap static dulu
-const news = [
-  {
-    title: "Harga Beras Stabil di Pasar Tradisional",
-    summary: "Pemerintah berhasil menjaga stabilitas harga beras melalui berbagai kebijakan intervensi pasar.",
-    date: "12 Des 2024",
-    image: "https://images.unsplash.com/photo-1743300290267-3ba7a8ce7095?w=1080",
-    category: "Kebijakan"
-  },
-  {
-    title: "Produksi Cabai Meningkat, Harga Diprediksi Turun",
-    summary: "Musim panen cabai merah di Jawa Tengah dan Jawa Timur diperkirakan menurunkan harga cabai.",
-    date: "11 Des 2024",
-    image: "https://images.unsplash.com/photo-1619338098121-5925681fc9ab?w=1080",
-    category: "Produksi"
-  },
-  {
-    title: "Program Bantuan Pangan untuk Masyarakat Kurang Mampu",
-    summary: "Kementerian Sosial meluncurkan program bantuan pangan berupa beras untuk 10 juta keluarga.",
-    date: "10 Des 2024",
-    image: "https://images.unsplash.com/photo-1562988330-1dbb410b4bfa?w=1080",
-    category: "Program Sosial"
-  },
-  {
-    title: "Harga Minyak Goreng Turun 3,5% dalam Sepekan",
-    summary: "Turunnya harga CPO global berdampak positif terhadap penurunan harga minyak goreng domestik.",
-    date: "9 Des 2024",
-    image: "https://images.unsplash.com/photo-1619338098121-5925681fc9ab?w=1080",
-    category: "Harga"
-  },
-  {
-    title: "Kementan Dorong Petani Tingkatkan Produksi Lokal",
-    summary: "Program swasembada pangan terus digalakkan untuk mengurangi ketergantungan impor.",
-    date: "8 Des 2024",
-    image: "https://images.unsplash.com/photo-1562988330-1dbb410b4bfa?w=1080",
-    category: "Pertanian"
-  },
-  {
-    title: "Inflasi Pangan November 2024 Terkendali di 0,8%",
-    summary: "BPS mencatat inflasi pangan November 2024 tetap terkendali berkat upaya stabilisasi pemerintah.",
-    date: "7 Des 2024",
-    image: "https://images.unsplash.com/photo-1743300290267-3ba7a8ce7095?w=1080",
-    category: "Ekonomi"
-  }
-]
-
 export default function App() {
   const [selectedProvince, setSelectedProvince] = useState<string | null>(null)
   const [role, setRole] = useState<'consumer' | 'farmer'>('consumer')
@@ -136,52 +89,30 @@ useEffect(() => {
           />
         </div>
 
-        <Tabs defaultValue="harga" className="mb-8">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="harga">Harga Komoditas</TabsTrigger>
-            <TabsTrigger value="berita">Berita Pangan</TabsTrigger>
-          </TabsList>
+        <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+  <h2 className="text-2xl font-bold text-gray-800 mb-2">
+    Harga Komoditas Pangan — {selectedProvince ?? '...'}
+  </h2>
+  <p className="text-gray-600 mb-6">
+    {role === 'consumer'
+      ? 'Klik komoditas untuk melihat tren harga'
+      : 'Klik komoditas untuk melihat harga jual'}
+  </p>
 
-          <TabsContent value="harga">
-            <div className="bg-white rounded-xl shadow-md p-6 mb-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
-                Harga Komoditas Pangan — {selectedProvince ?? '...'}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                {role === 'consumer'
-                  ? 'Klik komoditas untuk melihat tren harga'
-                  : 'Klik komoditas untuk melihat harga jual'}
-              </p>
-
-              {loadingCommodities ? (
-                <p className="text-gray-400 text-center py-12">Memuat data...</p>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {commodities.map((commodity) => (
-                    <CommodityCard
-                      key={commodity.name}
-                      {...commodity}
-                      onClick={() => handleCommodityClick(commodity.name)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="berita">
-            <div className="bg-white rounded-xl shadow-md p-6">
-              <h2 className="text-2xl font-bold text-gray-800 mb-6">
-                Berita Terkini Pangan Nasional
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {news.map((article, index) => (
-                  <NewsCard key={index} {...article} />
-                ))}
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+  {loadingCommodities ? (
+    <p className="text-gray-400 text-center py-12">Memuat data...</p>
+  ) : (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {commodities.map((commodity) => (
+        <CommodityCard
+          key={commodity.name}
+          {...commodity}
+          onClick={() => handleCommodityClick(commodity.name)}
+        />
+      ))}
+    </div>
+  )}
+</div>
 
         <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-xl p-6 border border-green-200">
           <div className="flex items-start gap-4">
@@ -213,21 +144,19 @@ useEffect(() => {
       )}
 
       {activeCommodity && (
-        <FarmerPriceModal
-          isOpen={isFarmerModalOpen}
-          onClose={() => setIsFarmerModalOpen(false)}
-          commodity={{
-            name: activeCommodity.name,
-            icon: activeCommodity.icon,
-            unit: activeCommodity.unit,
-            priceJakarta: 0,
-            priceBandung: 0,
-            priceNational: activeCommodity.price,
-            changeJakarta: 0,
-            changeBandung: 0,
-          }}
-        />
-      )}
+  <FarmerPriceModal
+    isOpen={isFarmerModalOpen}
+    onClose={() => setIsFarmerModalOpen(false)}
+    commodity={{
+      name: activeCommodity.name,
+      icon: activeCommodity.icon,
+      unit: activeCommodity.unit,
+      price: activeCommodity.price,
+      change: activeCommodity.change,
+      provinsi: selectedProvince ?? '',
+    }}
+  />
+)}
     </div>
   )
 }

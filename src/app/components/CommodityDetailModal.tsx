@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "./ui/dialog";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, MapPin } from "lucide-react";
+import { usePriceHistory, ChartMode } from "../../hooks/usePriceHistory";
 
 interface CommodityDetailModalProps {
   isOpen: boolean;
@@ -13,48 +15,46 @@ interface CommodityDetailModalProps {
     icon: string;
     city: string;
   } | null;
-  trendData: Array<{
-    date: string;
-    price: number;
-    isPrediction: boolean;
-  }>;
 }
 
-export function CommodityDetailModal({ isOpen, onClose, commodity, trendData }: CommodityDetailModalProps) {
+export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDetailModalProps) {
+  const [chartMode, setChartMode] = useState<ChartMode>('month')
+
+  const { data: trendData } = usePriceHistory(
+    commodity?.name ?? null,
+    commodity?.city ?? null,
+    chartMode
+  )
+
   if (!commodity) return null;
 
   const isPositive = commodity.change > 0;
-
-  // Pisahkan data historis dan prediksi
   const historicalData = trendData.filter(d => !d.isPrediction);
-  const predictionData = trendData.filter(d => d.isPrediction);
 
-  // Buat dataset dengan kolom terpisah untuk historis dan prediksi
   const chartData = trendData.map((item, index) => {
     if (item.isPrediction) {
-      // Untuk prediksi, set priceHistorical = null
-      return {
-        date: item.date,
-        priceHistorical: null,
-        pricePrediction: item.price,
-        isPrediction: true
-      };
+      return { date: item.date, priceHistorical: null, pricePrediction: item.price }
     } else {
-      // Untuk historis, set pricePrediction = null
-      // Kecuali titik terakhir historis, yang juga perlu ada di pricePrediction untuk koneksi
-      const isLastHistorical = index === historicalData.length - 1;
-      return {
-        date: item.date,
-        priceHistorical: item.price,
-        pricePrediction: isLastHistorical ? item.price : null,
-        isPrediction: false
-      };
+      const isLast = index === historicalData.length - 1;
+      return { date: item.date, priceHistorical: item.price, pricePrediction: isLast ? item.price : null }
     }
   });
 
+  const modeLabel = {
+    week: '1 Minggu',
+    month: '1 Bulan',
+    year: '1 Tahun'
+  }
+
+  const modeDesc = {
+    week: '5 hari historis + 2 hari prediksi',
+    month: '3 minggu historis + 1 minggu prediksi',
+    year: '10 bulan historis + 2 bulan prediksi'
+  }
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto w-[95vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <span className="text-4xl">{commodity.icon}</span>
@@ -67,7 +67,7 @@ export function CommodityDetailModal({ isOpen, onClose, commodity, trendData }: 
             </div>
           </DialogTitle>
           <DialogDescription>
-            Lihat harga terkini dan tren pergerakan harga {commodity.name} di {commodity.city} selama 30 hari terakhir plus prediksi 3 hari ke depan
+            Tren pergerakan harga {commodity.name} di {commodity.city}
           </DialogDescription>
         </DialogHeader>
 
@@ -85,24 +85,47 @@ export function CommodityDetailModal({ isOpen, onClose, commodity, trendData }: 
               isPositive ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
             }`}>
               {isPositive ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-              <span>{isPositive ? '+' : ''}{commodity.change}% dari minggu lalu</span>
+              <span>{isPositive ? '+' : ''}{commodity.change}% dari bulan lalu</span>
             </div>
           </div>
 
-          {/* Grafik Tren */}
+          {/* Toggle Mode Grafik */}
           <div>
-            <h3 className="font-bold text-gray-800 mb-4">Tren Harga 30 Hari Terakhir & Prediksi 3 Hari</h3>
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="font-bold text-gray-800">
+                Tren Harga — {modeLabel[chartMode]}
+              </h3>
+              <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                {(['week', 'month', 'year'] as ChartMode[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setChartMode(m)}
+                    className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
+                      chartMode === m
+                        ? 'bg-white text-green-700 shadow-sm'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    {modeLabel[m]}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="text-xs text-gray-500 mb-3">{modeDesc[chartMode]}</p>
+
             <div className="flex gap-4 mb-3 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-0.5 bg-green-600"></div>
                 <span className="text-gray-600">Data Historis</span>
               </div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-0.5 bg-amber-500 border-dashed border-t-2 border-amber-500"></div>
+                <div className="w-8 h-0.5 bg-amber-500"></div>
                 <span className="text-gray-600">Prediksi</span>
               </div>
             </div>
-            <ResponsiveContainer width="100%" height={300}>
+
+            <ResponsiveContainer width="100%" height={280}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis
@@ -115,50 +138,31 @@ export function CommodityDetailModal({ isOpen, onClose, commodity, trendData }: 
                 <YAxis
                   stroke="#6b7280"
                   style={{ fontSize: '12px' }}
-                  tickFormatter={(value) => `${value / 1000}k`}
+                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
                 />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#fff',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '8px',
-                    padding: '12px'
-                  }}
+                  contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}
                   formatter={(value: number, name: string) => {
                     if (!value) return null;
                     const label = name === 'priceHistorical' ? 'Harga Historis' : 'Prediksi Harga';
                     return [`Rp ${value.toLocaleString('id-ID')}`, label];
                   }}
                 />
-
-                {/* Garis data historis - jelas dan solid */}
                 <Line
                   type="monotone"
                   dataKey="priceHistorical"
                   stroke="#16a34a"
                   strokeWidth={3}
-                  dot={(props) => {
+                  dot={(props: any) => {
                     const { cx, cy, index } = props;
-                    // Hanya tampilkan dot untuk data terakhir historis (hari ini)
                     if (index === historicalData.length - 1) {
-                      return (
-                        <circle
-                          cx={cx}
-                          cy={cy}
-                          r={6}
-                          fill="#16a34a"
-                          stroke="#fff"
-                          strokeWidth={2}
-                        />
-                      );
+                      return <circle key={index} cx={cx} cy={cy} r={6} fill="#16a34a" stroke="#fff" strokeWidth={2} />;
                     }
-                    return null;
+                    return <g key={index} />;
                   }}
                   activeDot={{ r: 6 }}
                   connectNulls={false}
                 />
-
-                {/* Garis prediksi - buram dan putus-putus dengan warna kuning */}
                 <Line
                   type="monotone"
                   dataKey="pricePrediction"
@@ -167,14 +171,14 @@ export function CommodityDetailModal({ isOpen, onClose, commodity, trendData }: 
                   strokeDasharray="8 4"
                   strokeOpacity={0.6}
                   dot={false}
-                  activeDot={{ r: 6, fill: '#f59e0b', fillOpacity: 0.8 }}
+                  activeDot={{ r: 6, fill: '#f59e0b' }}
                   connectNulls={true}
                 />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
-          {/* Info Tambahan */}
+          {/* Info */}
           <div className="space-y-3">
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
               <p className="text-sm text-blue-900">
@@ -183,7 +187,7 @@ export function CommodityDetailModal({ isOpen, onClose, commodity, trendData }: 
             </div>
             <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
               <p className="text-sm text-amber-900">
-                <strong>🔮 Prediksi:</strong> Prediksi harga 3 hari ke depan dihitung berdasarkan tren 7 hari terakhir. Harga aktual dapat berbeda dari prediksi.
+                <strong>🔮 Prediksi:</strong> Prediksi dihitung berdasarkan tren historis. Harga aktual dapat berbeda dari prediksi.
               </p>
             </div>
           </div>
