@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, MapPin } from "lucide-react";
 import { usePriceHistory, ChartMode } from "../../hooks/usePriceHistory";
+import { useAIAnalysis } from "../../hooks/useAIAnalysis";
 
 interface CommodityDetailModalProps {
   isOpen: boolean;
@@ -19,12 +20,8 @@ interface CommodityDetailModalProps {
 
 export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDetailModalProps) {
   const [chartMode, setChartMode] = useState<ChartMode>('month')
-
-  const { data: trendData } = usePriceHistory(
-    commodity?.name ?? null,
-    commodity?.city ?? null,
-    chartMode
-  )
+  const { data: trendData } = usePriceHistory(commodity?.name ?? null, commodity?.city ?? null, chartMode)
+  const { analisis, prediksi, faktorRisiko, loading: aiLoading, error: aiError, analyze } = useAIAnalysis()
 
   if (!commodity) return null;
 
@@ -40,12 +37,7 @@ export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDe
     }
   });
 
-  const modeLabel = {
-    week: '1 Minggu',
-    month: '1 Bulan',
-    year: '1 Tahun'
-  }
-
+  const modeLabel = { week: '1 Minggu', month: '1 Bulan', year: '1 Tahun' }
   const modeDesc = {
     week: '5 hari historis + 2 hari prediksi',
     month: '3 minggu historis + 1 minggu prediksi',
@@ -92,18 +84,14 @@ export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDe
           {/* Toggle Mode Grafik */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h3 className="font-bold text-gray-800">
-                Tren Harga — {modeLabel[chartMode]}
-              </h3>
+              <h3 className="font-bold text-gray-800">Tren Harga — {modeLabel[chartMode]}</h3>
               <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
                 {(['week', 'month', 'year'] as ChartMode[]).map((m) => (
                   <button
                     key={m}
                     onClick={() => setChartMode(m)}
                     className={`px-3 py-1 rounded-md text-sm font-medium transition-all ${
-                      chartMode === m
-                        ? 'bg-white text-green-700 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-700'
+                      chartMode === m ? 'bg-white text-green-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                     }`}
                   >
                     {modeLabel[m]}
@@ -111,9 +99,7 @@ export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDe
                 ))}
               </div>
             </div>
-
             <p className="text-xs text-gray-500 mb-3">{modeDesc[chartMode]}</p>
-
             <div className="flex gap-4 mb-3 text-sm">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-0.5 bg-green-600"></div>
@@ -124,35 +110,19 @@ export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDe
                 <span className="text-gray-600">Prediksi</span>
               </div>
             </div>
-
             <ResponsiveContainer width="100%" height={280}>
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  stroke="#6b7280"
-                  style={{ fontSize: '11px' }}
-                  interval="preserveStartEnd"
-                  minTickGap={20}
-                />
-                <YAxis
-                  stroke="#6b7280"
-                  style={{ fontSize: '12px' }}
-                  tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
-                />
+                <XAxis dataKey="date" stroke="#6b7280" style={{ fontSize: '11px' }} interval="preserveStartEnd" minTickGap={20} />
+                <YAxis stroke="#6b7280" style={{ fontSize: '12px' }} tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', padding: '12px' }}
                   formatter={(value: number, name: string) => {
                     if (!value) return null;
-                    const label = name === 'priceHistorical' ? 'Harga Historis' : 'Prediksi Harga';
-                    return [`Rp ${value.toLocaleString('id-ID')}`, label];
+                    return [`Rp ${value.toLocaleString('id-ID')}`, name === 'priceHistorical' ? 'Harga Historis' : 'Prediksi Harga'];
                   }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="priceHistorical"
-                  stroke="#16a34a"
-                  strokeWidth={3}
+                <Line type="monotone" dataKey="priceHistorical" stroke="#16a34a" strokeWidth={3}
                   dot={(props: any) => {
                     const { cx, cy, index } = props;
                     if (index === historicalData.length - 1) {
@@ -160,22 +130,62 @@ export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDe
                     }
                     return <g key={index} />;
                   }}
-                  activeDot={{ r: 6 }}
-                  connectNulls={false}
+                  activeDot={{ r: 6 }} connectNulls={false}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="pricePrediction"
-                  stroke="#f59e0b"
-                  strokeWidth={3}
-                  strokeDasharray="8 4"
-                  strokeOpacity={0.6}
-                  dot={false}
-                  activeDot={{ r: 6, fill: '#f59e0b' }}
-                  connectNulls={true}
+                <Line type="monotone" dataKey="pricePrediction" stroke="#f59e0b" strokeWidth={3}
+                  strokeDasharray="8 4" strokeOpacity={0.6} dot={false}
+                  activeDot={{ r: 6, fill: '#f59e0b' }} connectNulls={true}
                 />
               </LineChart>
             </ResponsiveContainer>
+          </div>
+
+          {/* Analisis AI */}
+          <div className="border border-green-200 rounded-xl overflow-hidden">
+            <div className="bg-green-600 px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-white font-bold">🤖 Analisis AI</span>
+                <span className="text-green-200 text-xs">powered by Llama 3</span>
+              </div>
+              <button
+                onClick={() => analyze(
+                  commodity.name,
+                  commodity.city,
+                  commodity.price,
+                  trendData.filter(d => !d.isPrediction),
+                  new Date().getMonth()
+                )}
+                disabled={aiLoading}
+                className="bg-white text-green-700 px-3 py-1 rounded-lg text-sm font-medium hover:bg-green-50 disabled:opacity-50 transition-all"
+              >
+                {aiLoading ? 'Menganalisis...' : 'Analisis Sekarang'}
+              </button>
+            </div>
+
+            {aiError && <div className="p-4 text-red-600 text-sm">{aiError}</div>}
+
+            {!analisis && !aiLoading && !aiError && (
+              <div className="p-4 text-gray-400 text-sm text-center">
+                Klik "Analisis Sekarang" untuk mendapatkan insight AI tentang harga ini
+              </div>
+            )}
+
+            {analisis && (
+              <div className="p-4 space-y-4">
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">📊 Kondisi Saat Ini</p>
+                  <p className="text-sm text-gray-700">{analisis}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">🔮 Prediksi</p>
+                  <p className="text-sm text-gray-700">{prediksi}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">⚠️ Faktor Risiko</p>
+                  <p className="text-sm text-gray-700">{faktorRisiko}</p>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Info */}
