@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, TrendingDown, MapPin } from "lucide-react";
 import { usePriceHistory, ChartMode } from "../../hooks/usePriceHistory";
-import { useAIAnalysis } from "../../hooks/useAIAnalysis";
+import { getPrediction } from "../../hooks/usePrediction";
 
 interface CommodityDetailModalProps {
   isOpen: boolean;
@@ -21,7 +21,28 @@ interface CommodityDetailModalProps {
 export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDetailModalProps) {
   const [chartMode, setChartMode] = useState<ChartMode>('month')
   const { data: trendData } = usePriceHistory(commodity?.name ?? null, commodity?.city ?? null, chartMode)
-  const { analisis, prediksi, faktorRisiko, loading: aiLoading, error: aiError, analyze } = useAIAnalysis()
+  const [prediksiAI, setPrediksiAI] = useState<number | null>(null)
+const [aiLoading, setAiLoading] = useState(false)
+const [aiError, setAiError] = useState<string | null>(null)
+ 
+async function handlePrediction() {
+  try {
+    setAiLoading(true)
+    setAiError(null)
+
+    const data = await getPrediction(
+      commodity!.name,
+      commodity!.city
+    )
+
+    setPrediksiAI(data.prediksi)
+
+  } catch (error) {
+    setAiError("Gagal mengambil prediksi AI")
+  } finally {
+    setAiLoading(false)
+  }
+}
 
   if (!commodity) return null;
 
@@ -145,50 +166,40 @@ export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDe
             <div className="bg-green-600 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-white font-bold">🤖 Analisis AI</span>
-                <span className="text-green-200 text-xs">powered by Llama 3</span>
               </div>
               <button
-                onClick={() => analyze(
-                  commodity.name,
-                  commodity.city,
-                  commodity.price,
-                  trendData.filter(d => !d.isPrediction),
-                  new Date().getMonth()
-                )}
+                onClick={handlePrediction}
                 disabled={aiLoading}
                 className="bg-white text-green-700 px-3 py-1 rounded-lg text-sm font-medium hover:bg-green-50 disabled:opacity-50 transition-all"
               >
-                {aiLoading ? 'Menganalisis...' : 'Analisis Sekarang'}
+                 {aiLoading ? "Memproses..." : "Prediksi AI"}
               </button>
             </div>
-
+                
             {aiError && <div className="p-4 text-red-600 text-sm">{aiError}</div>}
 
-            {!analisis && !aiLoading && !aiError && (
+            {!prediksiAI && !aiLoading && !aiError && (
               <div className="p-4 text-gray-400 text-sm text-center">
                 Klik "Analisis Sekarang" untuk mendapatkan insight AI tentang harga ini
               </div>
             )}
 
-            {analisis && (
-              <div className="p-4 space-y-4">
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">📊 Kondisi Saat Ini</p>
-                  <p className="text-sm text-gray-700">{analisis}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">🔮 Prediksi</p>
-                  <p className="text-sm text-gray-700">{prediksi}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-bold text-gray-500 uppercase mb-1">⚠️ Faktor Risiko</p>
-                  <p className="text-sm text-gray-700">{faktorRisiko}</p>
-                </div>
+            {prediksiAI && (
+             <div className="p-4">
+                <p className="text-xs font-bold text-gray-500 uppercase mb-2">
+                  🔮 Prediksi Harga AI
+                </p>
+
+                <p className="text-2xl font-bold text-green-700">
+                  Rp {prediksiAI.toLocaleString("id-ID")}
+                </p>
+
+                <p className="text-sm text-gray-600 mt-2">
+                  Prediksi harga berdasarkan model XGBoost yang dilatih menggunakan data historis komoditas pangan.
+                </p>
               </div>
             )}
-          </div>
-
-          {/* Info */}
+         {/* Info */}
           <div className="space-y-3">
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
               <p className="text-sm text-blue-900">
@@ -202,6 +213,7 @@ export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDe
             </div>
           </div>
         </div>
+        </div> 
       </DialogContent>
     </Dialog>
   );
