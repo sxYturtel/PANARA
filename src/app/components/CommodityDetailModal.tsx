@@ -22,27 +22,31 @@ export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDe
   const [chartMode, setChartMode] = useState<ChartMode>('month')
   const { data: trendData } = usePriceHistory(commodity?.name ?? null, commodity?.city ?? null, chartMode)
   const [prediksiAI, setPrediksiAI] = useState<number | null>(null)
-const [aiLoading, setAiLoading] = useState(false)
-const [aiError, setAiError] = useState<string | null>(null)
- 
-async function handlePrediction() {
-  try {
-    setAiLoading(true)
-    setAiError(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
-    const data = await getPrediction(
-      commodity!.name,
-      commodity!.city
-    )
+  async function handlePrediction() {
+    try {
+      setAiLoading(true)
+      setAiError(null)
 
-    setPrediksiAI(data.prediksi)
+      const data = await getPrediction(
+        commodity!.name,
+        commodity!.city
+      )
 
-  } catch (error) {
-    setAiError("Gagal mengambil prediksi AI")
-  } finally {
-    setAiLoading(false)
+      setPrediksiAI(data.prediksi)
+
+    } catch (error) {
+      setAiError(
+        error instanceof Error
+          ? error.message
+          : "Gagal mengambil prediksi AI. Pastikan backend server berjalan."
+      )
+    } finally {
+      setAiLoading(false)
+    }
   }
-}
 
   if (!commodity) return null;
 
@@ -161,45 +165,53 @@ async function handlePrediction() {
             </ResponsiveContainer>
           </div>
 
-          {/* Analisis AI */}
+          {/* Prediksi AI */}
           <div className="border border-green-200 rounded-xl overflow-hidden">
             <div className="bg-green-600 px-4 py-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="text-white font-bold">🤖 Analisis AI</span>
+                <span className="text-white font-bold">🤖 Prediksi AI (XGBoost)</span>
               </div>
               <button
                 onClick={handlePrediction}
                 disabled={aiLoading}
                 className="bg-white text-green-700 px-3 py-1 rounded-lg text-sm font-medium hover:bg-green-50 disabled:opacity-50 transition-all"
               >
-                 {aiLoading ? "Memproses..." : "Prediksi AI"}
+                {aiLoading ? "Memproses..." : "Prediksi Sekarang"}
               </button>
             </div>
-                
-            {aiError && <div className="p-4 text-red-600 text-sm">{aiError}</div>}
+
+            {aiError && (
+              <div className="p-4 bg-red-50 text-red-600 text-sm border-t border-red-200">
+                <p className="font-semibold">⚠️ Error:</p>
+                <p>{aiError}</p>
+              </div>
+            )}
 
             {!prediksiAI && !aiLoading && !aiError && (
               <div className="p-4 text-gray-400 text-sm text-center">
-                Klik "Analisis Sekarang" untuk mendapatkan insight AI tentang harga ini
+                Klik "Prediksi Sekarang" untuk mendapatkan prediksi harga dari AI
               </div>
             )}
 
             {prediksiAI && (
-             <div className="p-4">
-                <p className="text-xs font-bold text-gray-500 uppercase mb-2">
-                  🔮 Prediksi Harga AI
-                </p>
+              <div className="p-4 space-y-3">
+                <div>
+                  <p className="text-xs font-bold text-gray-500 uppercase mb-2">
+                    🔮 Prediksi Harga
+                  </p>
+                  <p className="text-3xl font-bold text-green-700">
+                    Rp {prediksiAI.toLocaleString("id-ID")}
+                  </p>
+                </div>
 
-                <p className="text-2xl font-bold text-green-700">
-                  Rp {prediksiAI.toLocaleString("id-ID")}
-                </p>
-
-                <p className="text-sm text-gray-600 mt-2">
-                  Prediksi harga berdasarkan model XGBoost yang dilatih menggunakan data historis komoditas pangan.
+                <p className="text-sm text-gray-600 pt-2 border-t border-gray-200">
+                  Prediksi harga berdasarkan model <strong>XGBoost</strong> yang dilatih menggunakan data historis komoditas pangan Indonesia.
                 </p>
               </div>
             )}
-         {/* Info */}
+          </div>
+
+          {/* Info */}
           <div className="space-y-3">
             <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
               <p className="text-sm text-blue-900">
@@ -208,12 +220,11 @@ async function handlePrediction() {
             </div>
             <div className="bg-amber-50 rounded-lg p-4 border border-amber-200">
               <p className="text-sm text-amber-900">
-                <strong>🔮 Prediksi:</strong> Prediksi dihitung berdasarkan tren historis. Harga aktual dapat berbeda dari prediksi.
+                <strong>🔮 Prediksi:</strong> Prediksi dihitung berdasarkan tren historis dan model machine learning. Harga aktual dapat berbeda dari prediksi.
               </p>
             </div>
           </div>
         </div>
-        </div> 
       </DialogContent>
     </Dialog>
   );
