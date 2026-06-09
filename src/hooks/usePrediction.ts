@@ -1,28 +1,18 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const HF_API = 'https://peenapel-panara.hf.space'
 
-export async function getPrediction(
-  komoditas: string,
-  provinsi: string
-) {
-  const today = new Date().toISOString().split("T")[0]
+export async function getPrediction(komoditas: string, provinsi: string) {
+  const tomorrow = new Date('2024-09-30')
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  const tanggal = tomorrow.toISOString().split('T')[0]
 
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/predict?komoditas=${encodeURIComponent(komoditas)}&provinsi=${encodeURIComponent(provinsi)}&tanggal=${today}`
-    )
+  const res = await fetch(
+    `${HF_API}/predict?komoditas=${encodeURIComponent(komoditas)}&provinsi=${encodeURIComponent(provinsi)}&tanggal=${tanggal}`
+  )
 
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status} ${response.statusText}`)
-    }
+  if (!res.ok) throw new Error('Gagal koneksi ke API')
 
-    const data = await response.json()
-    return data
-  } catch (error) {
-    console.error('Prediction API Error:', error)
-    throw new Error(
-      error instanceof Error
-        ? error.message
-        : 'Gagal mengambil prediksi dari AI'
-    )
-  }
+  const data = await res.json()
+  if (data.error) throw new Error(data.error)
+
+  return { prediksi: data.prediksi }
 }
