@@ -7,17 +7,9 @@ from sklearn.metrics import mean_absolute_error
 
 from xgboost import XGBRegressor
 
-# =====================
-# LOAD DATA
-# =====================
-
 df = pd.read_csv(
     "database_pangan_clean.csv"
 )
-
-# =====================
-# CONVERT DATE
-# =====================
 
 df["Tanggal"] = pd.to_datetime(
     df["Tanggal"]
@@ -26,10 +18,6 @@ df["Tanggal"] = pd.to_datetime(
 df["tahun"] = df["Tanggal"].dt.year
 df["bulan"] = df["Tanggal"].dt.month
 df["hari"] = df["Tanggal"].dt.day
-
-# =====================
-# ENCODE CATEGORICAL
-# =====================
 
 komoditas_encoder = LabelEncoder()
 provinsi_encoder = LabelEncoder()
@@ -46,10 +34,6 @@ df["provinsi_encoded"] = (
     )
 )
 
-# =====================
-# FEATURES
-# =====================
-
 X = df[
     [
         "komoditas_encoded",
@@ -62,10 +46,6 @@ X = df[
 
 y = df["Harga"]
 
-# =====================
-# SPLIT
-# =====================
-
 X_train, X_test, y_train, y_test = (
     train_test_split(
         X,
@@ -75,10 +55,6 @@ X_train, X_test, y_train, y_test = (
     )
 )
 
-# =====================
-# MODEL
-# =====================
-
 model = XGBRegressor(
     n_estimators=300,
     max_depth=8,
@@ -87,18 +63,10 @@ model = XGBRegressor(
     random_state=42
 )
 
-# =====================
-# TRAIN
-# =====================
-
 model.fit(
     X_train,
     y_train
 )
-
-# =====================
-# EVALUATE
-# =====================
 
 pred = model.predict(X_test)
 
@@ -111,10 +79,6 @@ print(
     "MAE:",
     round(mae, 2)
 )
-
-# =====================
-# SAVE
-# =====================
 
 joblib.dump(
     model,

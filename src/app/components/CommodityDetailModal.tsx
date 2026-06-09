@@ -197,7 +197,7 @@ export function CommodityDetailModal({ isOpen, onClose, commodity }: CommodityDe
               <div className="p-4 space-y-3">
                 <div>
                   <p className="text-xs font-bold text-gray-500 uppercase mb-2">
-                    🔮 Prediksi Harga
+                    🔮 Prediksi Harga Besok
                   </p>
                   <p className="text-3xl font-bold text-green-700">
                     Rp {prediksiAI.toLocaleString("id-ID")}
